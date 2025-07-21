@@ -22,14 +22,13 @@ class AdvancedAnalyzer:
         """Perform comprehensive statistical analysis"""
         results = {}
         
-        # Basic statistics
+        
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         results['descriptive_stats'] = df[numeric_cols].describe().to_dict()
         
-        # Distribution analysis
+        # Distribution analysis of the dataset
         results['distribution_analysis'] = {}
         for col in numeric_cols:
-            # Normality test
             if len(df[col].dropna()) > 3:
                 statistic, p_value = stats.shapiro(df[col].dropna()[:5000])  # Limit for performance
                 results['distribution_analysis'][col] = {
@@ -39,7 +38,7 @@ class AdvancedAnalyzer:
                     'kurtosis': stats.kurtosis(df[col].dropna())
                 }
         
-        # Correlation analysis
+        # Correlation analysis of the dataset
         if len(numeric_cols) > 1:
             corr_matrix = df[numeric_cols].corr()
             results['correlation_analysis'] = {
@@ -47,7 +46,7 @@ class AdvancedAnalyzer:
                 'strong_correlations': self._find_strong_correlations(corr_matrix)
             }
         
-        # Categorical analysis
+        # Categorical analysis of the dataset
         categorical_cols = df.select_dtypes(include=['object']).columns
         results['categorical_analysis'] = {}
         for col in categorical_cols:
@@ -84,7 +83,7 @@ class AdvancedAnalyzer:
         
         results = {}
         
-        # Determine optimal number of clusters
+        # Determining optimal number of clusters
         silhouette_scores = []
         inertias = []
         k_range = range(2, min(max_clusters + 1, len(numeric_df) // 2))
@@ -97,7 +96,7 @@ class AdvancedAnalyzer:
         
         optimal_k = k_range[np.argmax(silhouette_scores)]
         
-        # Perform final clustering
+        # Final clustering
         kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
         cluster_labels = kmeans.fit_predict(numeric_df)
         
@@ -139,7 +138,7 @@ class AdvancedAnalyzer:
         pca = PCA()
         pca_result = pca.fit_transform(numeric_df)
         
-        # Determine number of components for 95% variance
+        
         cumsum = np.cumsum(pca.explained_variance_ratio_)
         n_components_95 = np.argmax(cumsum >= 0.95) + 1
         
@@ -163,14 +162,14 @@ class AdvancedAnalyzer:
             if len(column_data) == 0:
                 continue
                 
-            # IQR method
+            
             Q1 = column_data.quantile(0.25)
             Q3 = column_data.quantile(0.75)
             IQR = Q3 - Q1
             iqr_outliers = column_data[(column_data < Q1 - 1.5 * IQR) | 
                                      (column_data > Q3 + 1.5 * IQR)]
             
-            # Z-score method
+            
             z_scores = np.abs(stats.zscore(column_data))
             z_outliers = column_data[z_scores > 3]
             
@@ -218,31 +217,31 @@ class AdvancedAnalyzer:
         """Generate actionable insights from analysis"""
         insights = []
         
-        # Data quality insights
+        
         missing_pct = (df.isnull().sum() / len(df) * 100)
         high_missing = missing_pct[missing_pct > 20]
         if len(high_missing) > 0:
             insights.append(f"Data Quality Alert: {len(high_missing)} columns have >20% missing values")
         
-        # Correlation insights
+        
         if 'correlation_analysis' in analysis_results and 'strong_correlations' in analysis_results['correlation_analysis']:
             strong_corr = analysis_results['correlation_analysis']['strong_correlations']
             if strong_corr:
                 insights.append(f"Found {len(strong_corr)} strong correlations that may indicate redundant features")
         
-        # Distribution insights
+        
         if 'distribution_analysis' in analysis_results:
             non_normal = [col for col, info in analysis_results['distribution_analysis'].items() 
                          if not info['is_normal']]
             if non_normal:
                 insights.append(f"{len(non_normal)} features show non-normal distribution - consider transformation")
         
-        # Clustering insights
+        
         if 'clustering_analysis' in analysis_results and 'optimal_clusters' in analysis_results['clustering_analysis']:
             n_clusters = analysis_results['clustering_analysis']['optimal_clusters']
             insights.append(f"Data naturally segments into {n_clusters} distinct groups")
         
-        # Outlier insights
+        
         if 'outliers_analysis' in analysis_results:
             high_outlier_cols = [col for col, info in analysis_results['outliers_analysis'].items() 
                                if info['outlier_percentage'] > 5]
